@@ -3,13 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>XEM ẢNH BÀI KIỂM TRA CUỐI HK2</title>
+    <title>XEM ẢNH BÀI KIỂM TRA GIỮA HKI</title>
     <style>
         body { font-family: sans-serif; background: #f0f2f5; display: flex; justify-content: center; padding: 20px; }
         .card { background: white; padding: 25px; border-radius: 15px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); width: 100%; max-width: 800px; text-align: center; }
         h2 { color: #1a73e8; }
         select, input { width: 100%; padding: 12px; margin: 10px 0; border: 1px solid #ddd; border-radius: 8px; font-size: 16px; box-sizing: border-box; }
-        button { width: 100%; padding: 15px; background: #1a73e8; color: white; border: none; border-radius: 8px; font-size: 16px; cursor: pointer; transition: 0.3s; }
+        button { width: 100%; padding: 15px; background: #1a73e8; color: white; border: none; border-radius: 8px; font-size: 16px; cursor: pointer; transition: 0.3s; margin-top: 10px; }
         button:hover { background: #1557b0; }
         #imageContainer { margin-top: 20px; min-height: 200px; border: 2px dashed #eee; display: flex; flex-direction: column; align-items: center; justify-content: center; border-radius: 10px; }
         img { max-width: 100%; border-radius: 10px; margin-top: 10px; box-shadow: 0 5px 15px rgba(0,0,0,0.2); display: none; }
@@ -19,9 +19,16 @@
 <body>
 
 <div class="card">
-    <h2>XEM ẢNH BÀI KIỂM TRA CUỐI HK2</h2>
-    <p>Chọn môn và nhập SBD để xem ảnh</p>
+    <h2>XEM ẢNH BÀI KIỂM TRA GIỮA HKI</h2>
+    <p>Chọn khối, môn và nhập SBD để xem ảnh</p>
     
+    <select id="khoi">
+        <option value="">-- Chọn khối --</option>
+        <option value="10">Khối 10</option>
+        <option value="11">Khối 11</option>
+        <option value="12">Khối 12</option>
+    </select>
+
     <select id="mon">
         <option value="">-- Chọn môn học --</option>
         <option value="Toan">Toán</option>
@@ -36,35 +43,38 @@
         <option value="LI">Vật lý</option>
     </select>
 
-    <input type="text" id="sbd" placeholder="Nhập SBD">
+    <input type="text" id="sbd" placeholder="Nhập Số Báo Danh (VD: 99120528)">
     
     <button onclick="searchImage()">TÌM KIẾM</button>
 
     <div id="imageContainer">
         <p id="status">Chưa có dữ liệu</p>
-        <p class="loading" id="loader">Đang tải ảnh...</p>
-        <img id="resultImg" src="" alt="Ảnh sản phẩm">
+        <p class="loading" id="loader">Đang tải dữ liệu, vui lòng chờ...</p>
+        <img id="resultImg" src="" alt="Ảnh bài thi">
         <p id="fileName" style="font-weight: bold; margin-top: 10px;"></p>
     </div>
 </div>
 
 <script>
-     const API_URL="https://script.google.com/macros/s/AKfycbxT6NxrRGrODQJRZFqyFW3AZ0aPN88ydiHmh2SDdyxDtteHaM_OHKVGIAmjlXotPSxAQg/exec";
+    // Link API từ Google Apps Script
+    const API_URL = "https://script.google.com/macros/s/AKfycbzYzJTj2ErauEuX603roooVT5A5mG0-jWTEOegmqGVv9zhsY397vtG-7tE9QcqqQI41pA/exec";
 
     async function searchImage() {
+        const khoiVal = document.getElementById('khoi').value;
         const monVal = document.getElementById('mon').value;
         const sbdVal = document.getElementById('sbd').value.trim();
+        
         const img = document.getElementById('resultImg');
         const status = document.getElementById('status');
         const loader = document.getElementById('loader');
         const fileName = document.getElementById('fileName');
 
-        if (!monVal || !sbdVal) {
-            alert("Vui lòng nhập đầy đủ thông tin!");
+        if (!khoiVal || !monVal || !sbdVal) {
+            alert("Vui lòng chọn khối, môn và nhập SBD!");
             return;
         }
 
-        // Reset trạng thái
+        // Reset trạng thái hiển thị
         img.style.display = "none";
         fileName.innerText = "";
         status.innerText = "";
@@ -74,17 +84,19 @@
             const res = await fetch(API_URL);
             const data = await res.json();
             
+            // Đối chiếu dữ liệu Khối, Môn và SBD
             const match = data.find(item => 
+                item["Khối"].toString() === khoiVal &&
                 item["Môn"].toLowerCase() === monVal.toLowerCase() && 
                 item["SBD"].toString() === sbdVal
             );
 
             if (match) {
-                img.src = match["Link"]; // Link này giờ đã là link lh3 trực tiếp
+                img.src = match["Link"];
                 img.onload = () => {
                     loader.style.display = "none";
                     img.style.display = "block";
-                    fileName.innerText = "Học sinh: " + match["Tên file"];
+                    fileName.innerText = "Học sinh: " + match["Tên file"].split("-")[1].trim().replace(".jpg", "").replace(".png", "");
                 };
                 img.onerror = () => {
                     loader.style.display = "none";
@@ -92,7 +104,7 @@
                 };
             } else {
                 loader.style.display = "none";
-                status.innerText = "Không tìm thấy dữ liệu!";
+                status.innerText = "Không tìm thấy dữ liệu! Kiểm tra lại Khối, Môn hoặc SBD.";
             }
         } catch (e) {
             loader.style.display = "none";
